@@ -2,6 +2,7 @@ import cv2
 import os
 import re
 import shutil
+import subprocess
 
 def numerical_sort(value):
     numbers = re.findall(r'\d+', value)
@@ -30,6 +31,12 @@ def splitframe(videopath, output_dir):
             break
         frameNr += 1
     capture.release()
+    sound_file = os.path.join(output_dir, "audio.wav")
+    try:
+        subprocess.run(['ffmpeg', '-i', videopath, '-vn', '-acodec', 'pcm_s16le', sound_file], check=True)
+        print(f"Ses dosyası oluşturuldu: {sound_file}")
+    except Exception as e:
+        print(f"Ses dosyası oluşturulamadı: {e}")
 
 
 
@@ -45,7 +52,7 @@ def generate_video(video_name, image_folder, fps, boyut):
     """
     images = sorted([img for img in os.listdir(image_folder) if img.endswith((".png"))], key=numerical_sort)
 
-    fourcc = cv2.VideoWriter_fourcc(*'FFV1')  # Kayıpsız codec
+    fourcc = cv2.VideoWriter_fourcc(*'FFV1')
     video_writer = cv2.VideoWriter(video_name, fourcc, fps, boyut)
 
     for image in images:
@@ -55,6 +62,19 @@ def generate_video(video_name, image_folder, fps, boyut):
     video_writer.release()
     cv2.destroyAllWindows()
     print(f"Video oluşturuldu: {video_name}")
+
+    sound_file = os.path.join(image_folder, "audio.wav")
+    if os.path.exists(sound_file):
+        try:
+            subprocess.run(['ffmpeg', '-i', video_name, '-i', sound_file, '-c:v', 'copy', '-c:a', 'aac', '-y', 'output_with_sound.avi'], check=True)
+            print(f"Video ve ses birleştirildi: output_with_sound.avi")
+            os.remove(video_name)
+            os.rename("output_with_sound.avi", video_name)
+        except Exception as e:
+            print(f"Ses eklenirken hata oluştu: {e}")
+
+    else:
+        print("Uyarı: Ses dosyası bulunamadı, video ses olmadan kaydedildi.")
 
 def get_video_boyut(video_path):
     """

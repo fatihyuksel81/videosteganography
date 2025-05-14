@@ -1,10 +1,12 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QMessageBox, QStatusBar
+from PyQt6.QtWidgets import QMessageBox, QStatusBar, QLabel
 import basicsteganography
 import videosteganography
 import os
 import shutil
 import sys
+import cv2
+from PIL import Image
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -47,6 +49,11 @@ class Ui_MainWindow(object):
 
         self.input_video_path = "C:\\Users\\PC\\Downloads\\file.avi" 
         self.output_video_path = "stegovideo.avi"
+
+        self.max_char_label = QLabel(parent=self.centralwidget)
+        self.max_char_label.setGeometry(QtCore.QRect(120, 320, 300, 20))  # Konumu ve boyutu ayarlayın
+        self.max_char_label.setObjectName("max_char_label")
+        self.update_max_char_label()
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -102,6 +109,28 @@ class Ui_MainWindow(object):
             print(f"Geçici dizin silindi: {self.temp_dir_path}")
         else:
             print(f"Geçici dizin zaten yoktu: {self.temp_dir_path}")
+
+    def update_max_char_label(self): #ekledim
+        """
+        Maksimum saklanabilir karakter sayısını hesaplar ve etiketi günceller.
+        """
+        try:
+
+            if os.path.exists(self.input_video_path):
+                capture = cv2.VideoCapture(self.input_video_path)
+                success, frame = capture.read()
+                capture.release()
+                if success:
+                    height, width, channels = frame.shape
+                else:
+                    height, width = 0,0
+            else:
+                height, width = 0, 0
+
+            max_chars = (height * width * 3) // 8
+            self.max_char_label.setText(f"Maksimum Karakter: {max_chars - 1} ")
+        except Exception as e:
+            self.max_char_label.setText(f"Maksimum Karakter: Hesaplama başarısız. Hata: {str(e)}")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
